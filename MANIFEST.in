@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include bwmp_erpnext *.css
+recursive-include bwmp_erpnext *.csv
+recursive-include bwmp_erpnext *.html
+recursive-include bwmp_erpnext *.ico
+recursive-include bwmp_erpnext *.js
+recursive-include bwmp_erpnext *.json
+recursive-include bwmp_erpnext *.md
+recursive-include bwmp_erpnext *.png
+recursive-include bwmp_erpnext *.py
+recursive-include bwmp_erpnext *.svg
+recursive-include bwmp_erpnext *.txt
+recursive-exclude bwmp_erpnext *.pyc

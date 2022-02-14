@@ -107,13 +107,11 @@ doctype_js = {
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	"Payment Order": {
+		"on_cancel": "bwmp_erpnext.bwmp_erpnext.setup.unlink_uat_no_and_uat_date"
+	}
+}
 
 # Scheduled Tasks
 # ---------------

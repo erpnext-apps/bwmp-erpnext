@@ -13,13 +13,16 @@ frappe.ui.form.on('Payment Order', {
 		frm.clear_custom_buttons();
 
 		frm.add_custom_button(__('Payment Entry'), function() {
+			frm.doc.references = [];
+			refresh_field('references');
+
 			frm.trigger("custom_get_from_payment_entry");
 		}, __("Get Payments from"));
 	},
 
 	custom_get_from_payment_entry(frm) {
 		erpnext.utils.map_current_doc({
-			method: "erpnext.accounts.doctype.payment_entry.payment_entry.make_payment_order",
+			method: "bwmp_erpnext.bwmp_erpnext.setup.make_payment_order",
 			source_doctype: "Payment Entry",
 			target: frm,
 			date_field: "posting_date",

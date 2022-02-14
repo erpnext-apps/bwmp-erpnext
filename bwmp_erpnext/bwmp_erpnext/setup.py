@@ -29,7 +29,7 @@ def download_csv_file(payment_order):
 
 		data.extend([bank_account.beneficiary_code, bank_account.bank_account_no,
 			row.amount, row.supplier, '', '', '', '', '', '', '', '', bank_account.reference_no,
-			row.reference_name, '', '', '', '', '', '', '', row.posting_date, '',bank_account.ifsc_code, bank_account.bank,
+			row.reference_name, '', '', '', '', '', '', '', doc.posting_date, '',bank_account.ifsc_code, bank_account.bank,
 			bank_account.branch_name, bank_account.email_id])
 
 		csv_data.append(data)
@@ -73,3 +73,41 @@ def read_content(content, extension):
 		data = read_xls_file_from_attached_file(content)
 
 	return data
+
+def unlink_uat_no_and_uat_date(doc, method):
+	for row in doc.references:
+		frappe.db.set_value('Payment Entry', row.get('reference_name'), {
+			'utr_no': None,
+			'utr_date': None
+		})
+
+@frappe.whitelist()
+def make_payment_order(source_name, target_doc=None):
+	from frappe.model.mapper import get_mapped_doc
+	def set_missing_values(source, target):
+		target.payment_order_type = "Payment Entry"
+		target.append('references', dict(
+			reference_doctype="Payment Entry",
+			reference_name=source.name,
+			bank_account=source.party_bank_account,
+			amount=source.paid_amount,
+			account=source.paid_to,
+			supplier=source.party,
+			mode_of_payment=source.mode_of_payment,
+		))
+
+	doclist = get_mapped_doc("Payment Entry", source_name, {
+		"Payment Entry": {
+			"doctype": "Payment Order",
+			"validation": {
+				"docstatus": ["=", 1]
+			},
+			"field_no_map": [
+				'posting_date',
+				'status'
+			]
+		}
+
+	}, target_doc, set_missing_values)
+
+	return doclist

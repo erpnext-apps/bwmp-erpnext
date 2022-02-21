@@ -32,7 +32,8 @@ app_license = "MIT"
 
 # include js in doctype views
 doctype_js = {
-    "Payment Order" : "bwmp_erpnext/setup.js"
+    "Payment Order" : "bwmp_erpnext/setup.js",
+	"Stock Entry" : "bwmp_erpnext/stock_entry.js"
 }
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}

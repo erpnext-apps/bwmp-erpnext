@@ -82,6 +82,18 @@ def unlink_uat_no_and_uat_date(doc, method):
 		})
 
 @frappe.whitelist()
+def get_ordered_payment_entries():
+	payment_entries = frappe.get_all('Payment Order',
+		fields = ['`tabPayment Order Reference`.`reference_name`'],
+		filters= [
+			['Payment Order', 'status', '!=', 'Completed'],
+			['Payment Order Reference', 'docstatus', '<', 2],
+			['Payment Order Reference', 'reference_doctype', '=', 'Payment Entry']
+		])
+
+	return [row.reference_name for row in payment_entries]
+
+@frappe.whitelist()
 def make_payment_order(source_name, target_doc=None):
 	from frappe.model.mapper import get_mapped_doc
 	def set_missing_values(source, target):
@@ -111,3 +123,7 @@ def make_payment_order(source_name, target_doc=None):
 	}, target_doc, set_missing_values)
 
 	return doclist
+
+@frappe.whitelist()
+def has_batch_no(item_code):
+	return frappe.get_cached_value('Item', item_code, 'has_batch_no')

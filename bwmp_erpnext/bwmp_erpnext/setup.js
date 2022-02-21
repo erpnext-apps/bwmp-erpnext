@@ -1,7 +1,7 @@
 
 frappe.ui.form.on('Payment Order', {
 	refresh(frm) {
-		if (frm.doc.docstatus && frm.doc.status === 'Pending') {
+		if (frm.doc.docstatus === 1 && frm.doc.status === 'Pending') {
 			frm.trigger('generate_csv_file');
 			frm.trigger('upload_csv_file');
 		} else if (frm.doc.docstatus === 0) {
@@ -16,11 +16,22 @@ frappe.ui.form.on('Payment Order', {
 			frm.doc.references = [];
 			refresh_field('references');
 
-			frm.trigger("custom_get_from_payment_entry");
+			frm.trigger("get_ordered_payment_entries");
 		}, __("Get Payments from"));
 	},
 
-	custom_get_from_payment_entry(frm) {
+	get_ordered_payment_entries(frm) {
+		frappe.call({
+			method: 'bwmp_erpnext.bwmp_erpnext.setup.get_ordered_payment_entries',
+			callback: function(r) {
+				if (r.message) {
+					frm.events.custom_get_from_payment_entry(frm, r.message);
+				}
+			}
+		})
+	},
+
+	custom_get_from_payment_entry(frm, skip_payment_entries) {
 		erpnext.utils.map_current_doc({
 			method: "bwmp_erpnext.bwmp_erpnext.setup.make_payment_order",
 			source_doctype: "Payment Entry",
@@ -34,7 +45,8 @@ frappe.ui.form.on('Payment Order', {
 				docstatus: 1,
 				bank_account: frm.doc.company_bank_account,
 				paid_from: frm.doc.account,
-				utr_no: ["is", "not set"]
+				utr_no: ["is", "not set"],
+				name: ["not in", skip_payment_entries]
 			}
 		});
 	},
@@ -52,60 +64,23 @@ frappe.ui.form.on('Payment Order', {
 	},
 
 	upload_csv_file(frm) {
-		frm.add_custom_button('Upload File', () => {
+		frm.add_custom_button('Update UTR Details', () => {
 			frm.trigger('prepare_dialog')
 		});
 	},
 
 	prepare_dialog(frm) {
 		frm.upload_file_dialog = new frappe.ui.Dialog({
-			title: 'Upload File',
+			title: 'Update UTR',
 			fields: frm.events.get_fields(frm),
 			size: 'extra-large',
 			primary_action: (values) => {
-				debugger
 				frm.events.update_data(frm, values);
 			},
-			primary_action_label: __('Update')
+			primary_action_label: __('Update UTR Details')
 		})
 
 		frm.upload_file_dialog.show();
-	},
-
-	preview_uploaded_file(frm) {
-		let file_name = (
-			frm.upload_file_dialog.fields_dict.import_file.file_uploader.uploader.files[0].doc.name
-		);
-
-		frm.call({
-			method: 'bwmp_erpnext.bwmp_erpnext.setup.import_uploaded_file',
-			args: {
-				payment_order: frm.doc.name,
-				file_name: file_name
-			},
-			callback: function(r) {
-				if (r.message) {
-					frm.upload_file_dialog.fields_dict.statement_data.df.data = [];
-					r.message.forEach((data, index) => {
-						if (index !== 0 && frm.upload_file_dialog.fields_dict.import_file.value) {
-							frm.upload_file_dialog.fields_dict.statement_data.df.data.push({
-								'reference_name': data[0],
-								'company_bank_account': data[1],
-								'posting_date': data[2],
-								'amount': data[3],
-								'paty_name': data[4],
-								'ben_bank_name': data[10],
-								'party_account_no': data[11],
-								'utr_no': data[13],
-								'utr_date': data[14]
-							});
-						}
-					});
-
-					frm.upload_file_dialog.fields_dict.statement_data.grid.refresh();
-				}
-			}
-		})
 	},
 
 	update_data(frm, values) {
@@ -125,18 +100,12 @@ frappe.ui.form.on('Payment Order', {
 	get_fields(frm) {
 		return [
 			{
-				'label': 'Import File',
-				'fieldname': 'import_file',
-				'fieldtype': 'Attach',
-				change: function() {
-					frm.events.preview_uploaded_file(frm);
-				}
-			},
-			{
 				'label': 'Bank Statement',
 				'fieldname': 'statement_data',
 				'fieldtype': 'Table',
-				'data': [],
+				'cannot_delete_rows': 1,
+				'cannot_add_rows': 1,
+				'data': frm.events.get_data(frm),
 				'fields': [
 					{
 						'label' : 'Voucher No',
@@ -172,7 +141,7 @@ frappe.ui.form.on('Payment Order', {
 					},
 					{
 						'label' : 'Beneficiay Name',
-						'fieldname': 'paty_name',
+						'fieldname': 'party_name',
 						'in_list_view': 1,
 						'fieldtype': 'Data',
 						'columns': 1,
@@ -211,7 +180,94 @@ frappe.ui.form.on('Payment Order', {
 						'read_only': 1
 					}
 				]
+			},
+			{
+				'fieldtype': 'Section Break'
+			},
+			{
+				'label': 'Download File',
+				'fieldname': 'download_file',
+				'fieldtype': 'Button',
+				click: function() {
+					frm.events.download_file(frm);
+				}
+			},
+			{
+				'fieldtype': 'Section Break'
+			},
+			{
+				'label': 'Upload File',
+				'fieldname': 'import_file',
+				'fieldtype': 'Attach',
+				change: function() {
+					frm.events.preview_uploaded_file(frm);
+				}
 			}
 		]
-	}
+	},
+
+	download_file(frm) {
+		let data = [['Voucher No', 'Company Acc No', 'Date', 'Amount', 'Beneficiay Name',
+			'Ben. Bank Name', 'Ben. Account No', 'UTR No', 'UTR Date']];
+
+		frm.upload_file_dialog.fields_dict.statement_data.df.data.forEach(row => {
+			data.push([row.reference_name, row.company_bank_account, row.posting_date,
+				row.amount, row.party_name, row.ben_bank_name, row.party_account_no, '', '']);
+		});
+
+		frappe.tools.downloadify(data, null, frm.doc.name + ' _update_utr_details');
+	},
+
+	get_data(frm) {
+		let data = [];
+		frm.doc.references.forEach(row => {
+			data.push({
+				'reference_name': row.reference_name,
+				'company_bank_account': frm.doc.company_bank_account,
+				'posting_date': frm.doc.posting_date,
+				'amount': row.amount,
+				'party_name': row.party_name,
+				'ben_bank_name': row.bank_name,
+				'party_account_no': row.party_account_no
+			});
+		});
+
+		return data;
+	},
+
+	preview_uploaded_file(frm) {
+		let file_name = (
+			frm.upload_file_dialog.fields_dict.import_file.file_uploader.uploader.files[0].doc.name
+		);
+
+		frm.call({
+			method: 'bwmp_erpnext.bwmp_erpnext.setup.import_uploaded_file',
+			args: {
+				payment_order: frm.doc.name,
+				file_name: file_name
+			},
+			callback: function(r) {
+				if (r.message && r.message.length) {
+					frm.upload_file_dialog.fields_dict.statement_data.df.data = [];
+					r.message.forEach((data, index) => {
+						if (index !== 0 && frm.upload_file_dialog.fields_dict.import_file.value) {
+							frm.upload_file_dialog.fields_dict.statement_data.df.data.push({
+								'reference_name': data[0],
+								'company_bank_account': data[1],
+								'posting_date': data[2],
+								'amount': data[3],
+								'party_name': data[4],
+								'ben_bank_name': data[5],
+								'party_account_no': data[6],
+								'utr_no': data[7],
+								'utr_date': data[8]
+							});
+						}
+					});
+
+					frm.upload_file_dialog.fields_dict.statement_data.grid.refresh();
+				}
+			}
+		})
+	},
 })

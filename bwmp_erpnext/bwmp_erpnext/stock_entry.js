@@ -40,6 +40,25 @@ frappe.ui.form.on('Stock Entry Detail', {
 				}
 			});
 		}
+	},
+
+	pick_batch_no(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+		if (row.item_code && row.s_warehouse) {
+			frappe.call({
+				method: 'bwmp_erpnext.bwmp_erpnext.setup.has_batch_no',
+				args: {
+					item_code: row.item_code
+				},
+				callback: function(r) {
+					if (r.message) {
+						erpnext.stock.custom_batch_selector(frm, row);
+					}
+				}
+			});
+		} else {
+			frappe.msgprint(__('Select Item Code and Source Warehouse'));
+		}
 	}
 })
 

@@ -1,6 +1,7 @@
 import frappe, json
 from frappe import _
-from frappe.utils import format_date
+from frappe.utils import format_date, today
+from erpnext.stock.report.batch_wise_balance_history.batch_wise_balance_history import execute
 
 from frappe.utils.csvutils import (
 	build_csv_response,
@@ -15,10 +16,7 @@ from frappe.utils.xlsxutils import (
 
 @frappe.whitelist()
 def download_csv_file(payment_order):
-	csv_data = [['Txn Type', 'Beneficiary Code', 'Beneficiary A/c No', 'Amount', 'Beneficiary Name', '','', '',
-		'', '', '', '', '', 'Customer Reference No', 'Payment Detail 1', 'Payment Detail 2','Payment Detail 3',
-		'Payment Detail 4', 'Payment Detail 5', 'Payment Detail 6', 'Payment Detail 7','','Transaction Date',
-		'', 'IFSC Code', 'Beneficiary Bank Name', 'Beneficiary Bank Branch Name', 'Beneficiary Email ID']]
+	csv_data = []
 	doc = frappe.get_doc('Payment Order', payment_order)
 
 	for row in doc.references:
@@ -34,7 +32,9 @@ def download_csv_file(payment_order):
 
 		csv_data.append(data)
 
-	build_csv_response(csv_data, payment_order)
+	date_format = parse_naming_series('YYYY.MM.DD', doc.posting_date)
+	filename = f'{payment_order}-{date_format}'
+	build_csv_response(csv_data, filename)
 
 @frappe.whitelist()
 def update_payment_entry(payment_order, data):
@@ -80,6 +80,39 @@ def unlink_uat_no_and_uat_date(doc, method):
 			'utr_no': None,
 			'utr_date': None
 		})
+
+def validate_payment_order(doc, method):
+	if doc.docstatus == 0:
+		doc.status = 'Pending'
+
+@frappe.whitelist()
+def get_available_batches(item_code, warehouse, company):
+	filters = frappe._dict({
+		"item_code": item_code,
+		"warehouse": warehouse,
+		"company": company,
+		"from_date": today(),
+		"to_date": today()
+	})
+
+	columns, data = execute(filters)
+
+	batch_wise_data = get_batch_details()
+	for row in data:
+		batch_data = batch_wise_data.get(row[4]) or frappe._dict()
+		row.extend([batch_data.length, batch_data.width, batch_data.thickness, batch_data.weight])
+
+	return data
+
+def get_batch_details():
+	batch_details = {}
+	batch_data = frappe.get_all('Batch',
+		fields=["name", "length", "width", "thickness", "weight"])
+
+	for row in batch_data:
+		batch_details[row.name] = row
+
+	return batch_details
 
 @frappe.whitelist()
 def get_ordered_payment_entries():
@@ -127,3 +160,43 @@ def make_payment_order(source_name, target_doc=None):
 @frappe.whitelist()
 def has_batch_no(item_code):
 	return frappe.get_cached_value('Item', item_code, 'has_batch_no')
+
+def parse_naming_series(parts, date=None):
+	n = ''
+	if isinstance(parts, str):
+		parts = parts.split('.')
+	series_set = False
+	today = date or now_datetime()
+	for e in parts:
+		part = ''
+		if e.startswith('#'):
+			if not series_set:
+				digits = len(e)
+				part = getseries(n, digits)
+				series_set = True
+		elif e == 'YY':
+			part = today.strftime('%y')
+		elif e == 'MM':
+			part = today.strftime('%m')
+		elif e == 'DD':
+			part = today.strftime("%d")
+		elif e == 'YYYY':
+			part = today.strftime('%Y')
+		elif e == 'WW':
+			part = determine_consecutive_week_number(today)
+		elif e == 'timestamp':
+			part = str(today)
+		elif e == 'FY':
+			part = frappe.defaults.get_user_default("fiscal_year")
+		elif e.startswith('{') and doc:
+			e = e.replace('{', '').replace('}', '')
+			part = doc.get(e)
+		elif doc and doc.get(e):
+			part = doc.get(e)
+		else:
+			part = e
+
+		if isinstance(part, str):
+			n += part
+
+	return n

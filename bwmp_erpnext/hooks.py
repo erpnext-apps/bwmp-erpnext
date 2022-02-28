@@ -18,7 +18,7 @@ app_license = "MIT"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/bwmp_erpnext/css/bwmp_erpnext.css"
-# web_include_js = "/assets/bwmp_erpnext/js/bwmp_erpnext.js"
+app_include_js = "/assets/bwmp_erpnext/js/serial_no_batch_selector.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "bwmp_erpnext/public/scss/website"
@@ -110,6 +110,7 @@ doctype_js = {
 
 doc_events = {
 	"Payment Order": {
+		"validate": "bwmp_erpnext.bwmp_erpnext.setup.validate_payment_order",
 		"on_cancel": "bwmp_erpnext.bwmp_erpnext.setup.unlink_uat_no_and_uat_date"
 	}
 }

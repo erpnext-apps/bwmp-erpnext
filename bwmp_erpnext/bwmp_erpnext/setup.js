@@ -77,8 +77,12 @@ frappe.ui.form.on('Payment Order', {
 			primary_action: (values) => {
 				frm.events.update_data(frm, values);
 			},
-			primary_action_label: __('Update UTR Details')
-		})
+			secondary_action: () => {
+				frm.events.download_file(frm);
+			},
+			primary_action_label: __('Update UTR Details'),
+			secondary_action_label: __('Download File')
+		});
 
 		frm.upload_file_dialog.show();
 	},
@@ -180,20 +184,6 @@ frappe.ui.form.on('Payment Order', {
 						'read_only': 1
 					}
 				]
-			},
-			{
-				'fieldtype': 'Section Break'
-			},
-			{
-				'label': 'Download File',
-				'fieldname': 'download_file',
-				'fieldtype': 'Button',
-				click: function() {
-					frm.events.download_file(frm);
-				}
-			},
-			{
-				'fieldtype': 'Section Break'
 			},
 			{
 				'label': 'Upload File',

@@ -45,7 +45,6 @@ erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_
 
 erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 	constructor(opts, show_dialog) {
-        debugger
 		$.extend(this, opts);
 		this.show_dialog = show_dialog;
 		// frm, item, warehouse_details, has_batch, oldest
@@ -100,34 +99,8 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 				label: __(me.warehouse_details.type),
 				default: typeof me.warehouse_details.name == "string" ? me.warehouse_details.name : '',
 				onchange: function(e) {
-					me.warehouse_details.name = this.get_value();
-
 					if(me.has_batch && !me.has_serial_no) {
-						frappe.call({
-							method: 'bwmp_erpnext.bwmp_erpnext.setup.get_available_batches',
-							args: {
-								item_code: me.item_code,
-								warehouse: me.warehouse_details.name,
-								company: me.frm.doc.company
-							},
-							callback: function(r) {
-								me.batch_data = r.message || [];
-								me.batch_data.forEach(data => {
-									if(data[0] == me.item_code) {
-										this.dialog.fields_dict.batches.df.data.push({
-											'batch_no': data[4],
-											'actual_qty': data[8],
-											'selected_qty': 0.0,
-											'available_qty': data[8],
-											'length': data[9],
-											'width': data[10],
-											'thickness': data[11],
-											'weight': data[12]
-										});
-									}
-								});
-							}
-						});
+						me.get_available_batches();
 					} else {
 						fields = fields.concat(me.get_serial_no_fields());
 					}
@@ -209,7 +182,6 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 			fields = fields.concat(this.get_serial_no_fields());
 		}
 
-		debugger
 		this.dialog = new frappe.ui.Dialog({
 			title: title,
 			size: 'large',
@@ -306,6 +278,43 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 		}
 	}
 
+	get_available_batches() {
+		let me = this;
+		let dialog_data = this.dialog.get_values();
+		this.warehouse_details.name = dialog_data['warehouse'];
+
+		if (dialog_data['item_code'] && dialog_data['warehouse']) {
+			frappe.call({
+				method: 'bwmp_erpnext.bwmp_erpnext.setup.get_available_batches',
+				args: {
+					item_code: dialog_data['item_code'],
+					warehouse: dialog_data['warehouse'],
+					company: me.frm.doc.company
+				},
+				callback: function(r) {
+					me.batch_data = r.message || [];
+					me.dialog.fields_dict.batches.grid.df.data = [];
+					me.batch_data.forEach(data => {
+						if(data[0] == me.item_code) {
+							me.dialog.fields_dict.batches.df.data.push({
+								'batch_no': data[4],
+								'actual_qty': data[8],
+								'selected_qty': 0.0,
+								'available_qty': data[8],
+								'length': data[10],
+								'width': data[11],
+								'thickness': data[12],
+								'weight': data[13]
+							});
+						}
+					});
+
+					me.dialog.fields_dict.batches.grid.refresh();
+				}
+			});
+		}
+	}
+
 	update_batch_items() {
 		// clones an items if muliple batches are selected.
 		if(this.has_batch && !this.has_serial_no) {
@@ -323,6 +332,7 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 					row = this.item;
 				}
 				// this ensures that qty & batch no is set
+				debugger
 				this.map_row_values(row, batch, 'batch_no',
 					'available_qty', this.values.warehouse);
 			});
@@ -393,6 +403,11 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 		} else {
 			row.warehouse = values.warehouse || warehouse;
 		}
+
+		let fields = ['length', 'thickness', 'weight', 'width'];
+		fields.forEach(field => {
+			row[field] = flt(values[field]);
+		});
 
 		this.frm.dirty();
 	}

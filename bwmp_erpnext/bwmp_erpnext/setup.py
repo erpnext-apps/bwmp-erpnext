@@ -1,6 +1,7 @@
 import frappe, json
 from frappe import _
 from frappe.utils import format_date, today
+from frappe.contacts.doctype.contact.contact import get_default_contact
 from erpnext.stock.report.batch_wise_balance_history.batch_wise_balance_history import execute
 
 from frappe.utils.csvutils import (
@@ -20,21 +21,66 @@ def download_csv_file(payment_order):
 	doc = frappe.get_doc('Payment Order', payment_order)
 
 	for row in doc.references:
-		data = ['']
+		data = []
 
-		bank_account = frappe.db.get_value('Bank Account', row.bank_account, ['beneficiary_code',
-			'bank_account_no', 'reference_no', 'ifsc_code', 'bank', 'branch_name', 'email_id'], as_dict=1)
+		party_data = get_bank_and_payment_details(row.bank_account, row.reference_name)
 
-		data.extend([bank_account.beneficiary_code, bank_account.bank_account_no,
-			row.amount, row.supplier, '', '', '', '', '', '', '', '', bank_account.reference_no,
-			row.reference_name, '', '', '', '', '', '', '', doc.posting_date, '',bank_account.ifsc_code, bank_account.bank,
-			bank_account.branch_name, bank_account.email_id])
+		data.extend([
+			party_data.mop_short_form, party_data.beneficiary_code, party_data.bank_account_no,
+			row.amount, row.supplier, '', '', '', '', '', '', '', '', party_data.reference_no,
+			row.reference_name, '', '', '', '', '', '', '', doc.posting_date, '',
+			party_data.ifsc_code, party_data.bank, party_data.branch_name,
+			party_data.email
+		])
 
 		csv_data.append(data)
 
 	date_format = parse_naming_series('YYYY.MM.DD', doc.posting_date)
 	filename = f'{payment_order}-{date_format}'
 	build_csv_response(csv_data, filename)
+
+def get_bank_and_payment_details(bank_account, reference_name) -> list:
+	bank_account = frappe.db.get_value('Bank Account', bank_account, ['beneficiary_code',
+			'bank_account_no', 'reference_no', 'ifsc_code', 'bank', 'branch_name', 'email_id'], as_dict=1)
+
+	payment_entry_details = frappe.db.get_value('Payment Entry', reference_name,
+		['mode_of_payment', 'contact_email', 'party', 'party_type'], as_dict=1)
+
+	bank_account.email = payment_entry_details.contact_email
+	if payment_entry_details.party_type == 'Supplier':
+		default_contact = get_default_contact('Supplier', payment_entry_details.party)
+		email = get_default_contact_email(default_contact)
+		if email:
+			bank_account.email = email
+
+	bank_account.mop_short_form = ''
+	if payment_entry_details.mode_of_payment:
+		bank_account.mop_short_form = frappe.get_cached_value('Mode of Payment',
+			payment_entry_details.mode_of_payment, 'short_name')
+
+	return bank_account
+
+def get_default_contact_email(default_contact) -> str:
+	"""
+		Returns default contact for the given doctype and name.
+		Can be ordered by `contact_type` to either is_primary_contact or is_billing_contact.
+	"""
+	out = frappe.db.sql("""
+			SELECT
+				email_id
+			FROM
+				`tabContact Email`
+			WHERE
+				parent=%s
+			ORDER BY is_primary DESC
+		""", (default_contact))
+	if out:
+		try:
+			return out[0][0]
+		except Exception:
+			return None
+	else:
+		return None
 
 @frappe.whitelist()
 def update_payment_entry(payment_order, data):

@@ -25,10 +25,13 @@ def download_csv_file(payment_order):
 
 		party_data = get_bank_and_payment_details(row.bank_account, row.reference_name)
 
-		data.extend([
-			party_data.mop_short_form, party_data.beneficiary_code, party_data.bank_account_no,
-			row.amount, row.supplier, '', '', '', '', '', '', '', '', party_data.reference_no,
-			row.reference_name, '', '', '', '', '', '', '', doc.posting_date, '',
+		data.extend([ party_data.mop_short_form, party_data.beneficiary_code,
+			party_data.bank_account_no, row.amount, row.supplier, '', '', '', '', '', '', '', '',
+			party_data.reference_no, row.reference_name])
+
+		data.extend(get_supplier_invoice_no(row, party_data))
+
+		data.extend([doc.posting_date, '',
 			party_data.ifsc_code, party_data.bank, party_data.branch_name,
 			party_data.email
 		])
@@ -38,6 +41,31 @@ def download_csv_file(payment_order):
 	date_format = parse_naming_series('YYYY.MM.DD', doc.posting_date)
 	filename = f'{payment_order}-{date_format}'
 	build_csv_response(csv_data, filename)
+
+def get_supplier_invoice_no(row, party_data):
+	data = ['', '', '', '', '', '', '']
+
+	if row.reference_doctype == 'Payment Entry':
+		index = 0
+		references = frappe.get_all('Payment Entry Reference',
+			filters = {'parent': row.reference_name, 'bill_no': ['is', 'set']}, fields=['bill_no'])
+
+		bill_no = ''
+		for reference in references:
+			if index == 7:
+				continue
+
+			if len(bill_no) + len(reference.bill_no) < 29:
+				bill_no += reference.bill_no + ', '
+			elif bill_no:
+				data[index] = bill_no
+				bill_no = ''
+				index += 1
+
+		if bill_no:
+			data[index] = bill_no
+
+	return data
 
 def get_bank_and_payment_details(bank_account, reference_name) -> list:
 	bank_account = frappe.db.get_value('Bank Account', bank_account, ['beneficiary_code',

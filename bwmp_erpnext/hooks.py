@@ -30,9 +30,6 @@ app_include_js = "/assets/bwmp_erpnext/js/serial_no_batch_selector.js"
 fixtures = [
 	{
 		"dt": "Server Script"
-	},
-	{
-		"dt": "Custom Field", "filters": [["creation", ">=", "2022-01-24"], ["fieldname", "!=", "workflow_state"]]
 	}
 ]
 

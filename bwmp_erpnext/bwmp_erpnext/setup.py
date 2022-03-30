@@ -48,7 +48,8 @@ def get_supplier_invoice_no(row, party_data):
 	if row.reference_doctype == 'Payment Entry':
 		index = 0
 		references = frappe.get_all('Payment Entry Reference',
-			filters = {'parent': row.reference_name, 'bill_no': ['is', 'set']}, fields=['bill_no'])
+			filters = {'parent': row.reference_name, 'bill_no': ['is', 'set']},
+			fields=['bill_no'], order_by="idx")
 
 		bill_no = ''
 		for reference in references:
@@ -59,7 +60,7 @@ def get_supplier_invoice_no(row, party_data):
 				bill_no += reference.bill_no + ', '
 			elif bill_no:
 				data[index] = bill_no
-				bill_no = ''
+				bill_no = reference.bill_no
 				index += 1
 
 		if bill_no:

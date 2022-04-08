@@ -43,6 +43,35 @@ erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_
 	});
 }
 
+erpnext.stock.select_batch_and_serial_no = (frm, item) => {
+	let get_warehouse_type_and_name = (item) => {
+		let value = '';
+		if(frm.fields_dict.from_warehouse.disp_status === "Write") {
+			value = cstr(item.s_warehouse) || '';
+			return {
+				type: 'Source Warehouse',
+				name: value
+			};
+		} else {
+			value = cstr(item.t_warehouse) || '';
+			return {
+				type: 'Target Warehouse',
+				name: value
+			};
+		}
+	}
+
+	if(item && !item.has_serial_no && !item.has_batch_no) return;
+	if (frm.doc.purpose === 'Material Receipt') return;
+
+
+	new erpnext.SerialNoBatchSelector({
+		frm: frm,
+		item: item,
+		warehouse_details: get_warehouse_type_and_name(item),
+	}, true);
+}
+
 erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 	constructor(opts, show_dialog) {
 		$.extend(this, opts);
@@ -56,6 +85,7 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 		if(d && d.has_serial_no && !(this.show_dialog == false)) this.has_serial_no = 1;
 
 		let me = this;
+
 		frappe.call({
 			method: 'bwmp_erpnext.bwmp_erpnext.setup.get_available_batches',
 			args: {
@@ -192,7 +222,6 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 			me.values = me.dialog.get_values();
 
 			me.values.batches = me.dialog.fields_dict.batches.grid.get_selected_children();
-			debugger
 
 			if(me.validate()) {
 				frappe.run_serially([
@@ -217,7 +246,7 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 				this.dialog.fields_dict.serial_no.set_value(this.item.serial_no);
 			}
 
-			if (this.has_batch && !this.has_serial_no && d.batch_no) {
+			if (this.batch_data && this.batch_data.length) {
 				this.batch_data.forEach(data => {
 					if(data[0] == d.item_code) {
 						this.dialog.fields_dict.batches.df.data.push({
@@ -226,8 +255,6 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 							'selected_qty': 0.0,
 							'available_qty': data[8],
 							'length': data[10],
-							'width': data[11],
-							'thickness': data[12],
 							'weight': data[13]
 						});
 					}
@@ -302,8 +329,6 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 								'selected_qty': 0.0,
 								'available_qty': data[8],
 								'length': data[10],
-								'width': data[11],
-								'thickness': data[12],
 								'weight': data[13]
 							});
 						}
@@ -332,7 +357,6 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 					row = this.item;
 				}
 				// this ensures that qty & batch no is set
-				debugger
 				this.map_row_values(row, batch, 'batch_no',
 					'available_qty', this.values.warehouse);
 			});
@@ -449,7 +473,7 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 					{
 						'fieldtype': 'Link',
 						'read_only': 1,
-						'columns': 2,
+						'columns': 3,
 						'fieldname': 'batch_no',
 						'options': 'Batch',
 						'label': __('Batch'),
@@ -508,7 +532,7 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 					{
 						'fieldtype': 'Float',
 						'read_only': 1,
-						'columns': 2,
+						'columns': 3,
 						'fieldname': 'available_qty',
 						'label': __('Available'),
 						'in_list_view': 1,
@@ -530,24 +554,6 @@ erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
 						'fieldtype': 'Data',
 						'read_only': 1,
 						'columns': 2,
-						'fieldname': 'width',
-						'label': __('Width'),
-						'in_list_view': 1,
-						'default': 0
-					},
-					{
-						'fieldtype': 'Data',
-						'read_only': 1,
-						'columns': 1,
-						'fieldname': 'thickness',
-						'label': __('Thickness'),
-						'in_list_view': 1,
-						'default': 0
-					},
-					{
-						'fieldtype': 'Data',
-						'read_only': 1,
-						'columns': 1,
 						'fieldname': 'weight',
 						'label': __('Weight'),
 						'in_list_view': 1,

@@ -233,8 +233,8 @@ def make_payment_order(source_name, target_doc=None):
 	return doclist
 
 @frappe.whitelist()
-def has_batch_no(item_code):
-	return frappe.get_cached_value('Item', item_code, 'has_batch_no')
+def has_batch_serial_no(item_code):
+	return frappe.get_cached_value('Item', item_code, ['has_batch_no', 'has_serial_no'], as_dict=1)
 
 def parse_naming_series(parts, date=None):
 	n = ''
@@ -275,3 +275,8 @@ def parse_naming_series(parts, date=None):
 			n += part
 
 	return n
+
+def update_naming_prefix(doc, method):
+	if (frappe.db.has_column(doc.doctype, "document_naming_series")
+		and frappe.db.has_column(doc.doctype, "naming_series")):
+		doc.document_naming_series = doc.naming_series

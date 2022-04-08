@@ -33,6 +33,10 @@ fixtures = [
 	}
 ]
 
+override_doctype_class = {
+	"Document Naming Rule": "bwmp_erpnext.bwmp_erpnext.custom_document_naming_rule.CustomDocumentNamingRule"
+}
+
 # include js in page
 # page_js = {"page" : "public/js/file.js"}
 
@@ -118,6 +122,10 @@ doc_events = {
 	"Payment Order": {
 		"validate": "bwmp_erpnext.bwmp_erpnext.setup.validate_payment_order",
 		"on_cancel": "bwmp_erpnext.bwmp_erpnext.setup.unlink_uat_no_and_uat_date"
+	},
+
+	"*": {
+		"validate": "bwmp_erpnext.bwmp_erpnext.setup.update_naming_prefix",
 	}
 }
 

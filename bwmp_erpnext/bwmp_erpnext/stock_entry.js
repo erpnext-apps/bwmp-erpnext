@@ -10,16 +10,31 @@ frappe.ui.form.on('Stock Entry', {
 	},
 
 	hide_batch_selector(frm) {
-		if (frm.doc.stock_entry_type === 'Item Batch Splitting') {
-			frappe.flags.hide_serial_batch_dialog = true;
-		} else {
-			frappe.db.get_single_value('Stock Settings', 'disable_serial_no_and_batch_selector')
-				.then((value) => {
-					if (value) {
-						frappe.flags.hide_serial_batch_dialog = true;
+		frappe.flags.hide_serial_batch_dialog = true;
+	},
+
+	setup_batch_serial_no_selector(frm, row) {
+		if (row.item_code && row.s_warehouse) {
+			frappe.call({
+				method: 'bwmp_erpnext.bwmp_erpnext.setup.has_batch_serial_no',
+				args: {
+					item_code: row.item_code
+				},
+				callback: function(r) {
+					if (r.message) {
+						row.has_batch_no = r.message.has_batch_no;
+						row.has_serial_no = r.message.has_serial_no;
+
+						if (frm.doc.stock_entry_type === 'Item Batch Splitting') {
+							erpnext.stock.custom_batch_selector(frm, row);
+						} else {
+							frappe.require("assets/bwmp_erpnext/js/serial_no_batch_selector.js", function() {
+								erpnext.stock.select_batch_and_serial_no(frm, row);
+							});
+						}
 					}
 				}
-			);
+			});
 		}
 	}
 })
@@ -27,38 +42,14 @@ frappe.ui.form.on('Stock Entry', {
 frappe.ui.form.on('Stock Entry Detail', {
 	item_code(frm, cdt, cdn) {
 		let row = locals[cdt][cdn];
-		if (row.item_code && row.s_warehouse) {
-			frappe.call({
-				method: 'bwmp_erpnext.bwmp_erpnext.setup.has_batch_no',
-				args: {
-					item_code: row.item_code
-				},
-				callback: function(r) {
-					if (r.message) {
-						erpnext.stock.custom_batch_selector(frm, row);
-					}
-				}
-			});
-		}
+		frappe.flags.hide_serial_batch_dialog = true;
+		frm.events.setup_batch_serial_no_selector(frm, row);
 	},
 
 	pick_batch_no(frm, cdt, cdn) {
 		let row = locals[cdt][cdn];
-		if (row.item_code && row.s_warehouse) {
-			frappe.call({
-				method: 'bwmp_erpnext.bwmp_erpnext.setup.has_batch_no',
-				args: {
-					item_code: row.item_code
-				},
-				callback: function(r) {
-					if (r.message) {
-						erpnext.stock.custom_batch_selector(frm, row);
-					}
-				}
-			});
-		} else {
-			frappe.msgprint(__('Select Item Code and Source Warehouse'));
-		}
+		frappe.flags.hide_serial_batch_dialog = true;
+		frm.events.setup_batch_serial_no_selector(frm, row);
 	}
 })
 

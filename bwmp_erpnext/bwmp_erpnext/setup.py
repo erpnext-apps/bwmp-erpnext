@@ -277,6 +277,5 @@ def parse_naming_series(parts, date=None):
 	return n
 
 def update_naming_prefix(doc, method):
-	if (frappe.db.has_column(doc.doctype, "document_naming_series")
-		and frappe.db.has_column(doc.doctype, "naming_series")):
+	if doc.doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry"]:
 		doc.document_naming_series = doc.naming_series

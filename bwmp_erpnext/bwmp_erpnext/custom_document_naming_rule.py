@@ -18,7 +18,7 @@ class CustomDocumentNamingRule(DocumentNamingRule):
 
 		doc.name = naming_series + ('%0'+str(self.prefix_digits)+'d') % (counter + 1)
 
-		if frappe.db.has_column(doc.doctype, "document_naming_series"):
+		if doc.doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry"]:
 			doc.document_naming_series = self.prefix
 
 		frappe.db.set_value(self.doctype, self.name, 'counter', counter + 1)

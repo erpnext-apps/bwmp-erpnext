@@ -9,3 +9,12 @@ def execute():
 	for doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry"]:
 		frappe.reload_doc("accounts", "doctype", frappe.scrub(doctype))
 		create_custom_field(doctype, df)
+
+		frappe.db.sql(f"""
+			UPDATE
+				`tab{doctype}`
+			SET
+				document_naming_series = naming_series
+			WHERE
+				naming_series IS NOT NULL
+		""")

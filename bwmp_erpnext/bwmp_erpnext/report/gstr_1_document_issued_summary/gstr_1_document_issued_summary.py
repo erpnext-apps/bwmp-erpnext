@@ -160,14 +160,12 @@ def get_document_summary(filters, document_details, nature_of_document):
 			continue
 
 		sorted_names = sorted(name_data.items(), key=lambda x: x[1])
-		total_number = len(sorted_names)
-
 		res.append(frappe._dict({
 			"naming_series": naming_series,
 			"nature_of_document": nature_of_document,
 			"from_serial_no": sorted_names[0][0],
-			"to_serial_no": sorted_names[total_number - 1][0],
-			"total_number": total_number,
+			"to_serial_no": sorted_names[len(sorted_names) - 1][0],
+			"total_number": len(name_data),
 			"canceled": canceled_documents.get(naming_series)
 		}))
 

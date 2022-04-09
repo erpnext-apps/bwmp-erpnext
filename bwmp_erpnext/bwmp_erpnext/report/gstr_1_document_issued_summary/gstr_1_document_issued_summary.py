@@ -111,7 +111,7 @@ def get_data(filters) -> list:
 def get_document_summary(filters, document_details, nature_of_document):
 	condition = (f"""company = {frappe.db.escape(filters.company)}
 		AND posting_date BETWEEN '{filters.from_date}' AND '{filters.to_date}'
-		AND document_naming_series IS NOT NULL """)
+		AND document_naming_series IS NOT NULL AND docstatus > 0 """)
 
 	if document_details.condition:
 		condition += f" AND {document_details.condition}"
@@ -125,15 +125,12 @@ def get_document_summary(filters, document_details, nature_of_document):
 
 	data = frappe.db.sql(f"""
 		SELECT
-			MIN(name) as from_serial_no, MAX(name) as to_serial_no,
-			COUNT(name) as total_number, document_naming_series as naming_series
+			name, creation, document_naming_series as naming_series
 		FROM
 			`tab{document_details.doctype}`
 		WHERE
 			{condition}
-		GROUP BY
-			document_naming_series
-	""", as_dict=1, debug=1)
+	""", as_dict=1)
 
 	canceled_documents = frappe.db.sql(f"""
 		SELECT
@@ -149,8 +146,29 @@ def get_document_summary(filters, document_details, nature_of_document):
 	if canceled_documents:
 		canceled_documents = {row.naming_series: row.total_number for row in canceled_documents}
 
+	naming_series_data = {}
 	for item in data:
-		item.nature_of_document = nature_of_document
-		item.canceled = canceled_documents.get(item.naming_series)
+		if item.naming_series not in naming_series_data:
+			naming_series_data.setdefault(item.naming_series, {})
 
-	return data
+		names = naming_series_data.get(item.naming_series)
+		names[item.name] = item.creation
+
+	res = []
+	for naming_series, name_data in naming_series_data.items():
+		if not name_data:
+			continue
+
+		sorted_names = sorted(name_data.items(), key=lambda x: x[1])
+		total_number = len(sorted_names)
+
+		res.append(frappe._dict({
+			"naming_series": naming_series,
+			"nature_of_document": nature_of_document,
+			"from_serial_no": sorted_names[0][0],
+			"to_serial_no": sorted_names[total_number - 1][0],
+			"total_number": total_number,
+			"canceled": canceled_documents.get(naming_series)
+		}))
+
+	return res

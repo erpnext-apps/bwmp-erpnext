@@ -278,4 +278,5 @@ def parse_naming_series(parts, date=None):
 
 def update_naming_prefix(doc, method):
 	if doc.doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry"]:
-		doc.document_naming_series = doc.naming_series
+		if not doc.document_naming_series:
+			doc.document_naming_series = doc.naming_series

@@ -110,7 +110,7 @@ def get_data(filters) -> list:
 
 def get_document_summary(filters, document_details, nature_of_document):
 	condition = (f"""company = {frappe.db.escape(filters.company)}
-		AND creation BETWEEN '{filters.from_date} 00:00:00' AND '{filters.to_date} 23:59:59'
+		AND posting_date BETWEEN '{filters.from_date}' AND '{filters.to_date}'
 		AND document_naming_series IS NOT NULL """)
 
 	if document_details.condition:

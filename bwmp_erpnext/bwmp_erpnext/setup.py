@@ -25,9 +25,12 @@ def download_csv_file(payment_order):
 
 		party_data = get_bank_and_payment_details(row.bank_account, row.reference_name)
 
+		neft_reference_no = (row.reference_name
+			if party_data.mode_of_payment == 'NEFT' else party_data.reference_no)
+
 		data.extend([ party_data.mop_short_form, party_data.beneficiary_code,
 			party_data.bank_account_no, row.amount, row.supplier, '', '', '', '', '', '', '', '',
-			party_data.reference_no, row.reference_name])
+			neft_reference_no, row.reference_name])
 
 		data.extend(get_supplier_invoice_no(row, party_data))
 
@@ -86,6 +89,8 @@ def get_bank_and_payment_details(bank_account, reference_name) -> list:
 	if payment_entry_details.mode_of_payment:
 		bank_account.mop_short_form = frappe.get_cached_value('Mode of Payment',
 			payment_entry_details.mode_of_payment, 'short_name')
+
+	bank_account.mode_of_payment = payment_entry_details.mode_of_payment
 
 	return bank_account
 
@@ -280,3 +285,8 @@ def update_naming_prefix(doc, method):
 	if doc.doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry"]:
 		if not doc.document_naming_series:
 			doc.document_naming_series = doc.naming_series
+
+	if doc.doctype == 'Payment Entry':
+		if doc.mode_of_payment == "NEFT":
+			doc.reference_no = doc.name
+			doc.reference_date = today()

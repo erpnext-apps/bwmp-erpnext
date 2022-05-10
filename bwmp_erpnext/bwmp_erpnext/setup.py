@@ -204,7 +204,7 @@ def get_ordered_payment_entries():
 			['Payment Order Reference', 'reference_doctype', '=', 'Payment Entry']
 		])
 
-	return [row.reference_name for row in payment_entries]
+	return list(set([row.reference_name for row in payment_entries]))
 
 @frappe.whitelist()
 def make_payment_order(source_name, target_doc=None):

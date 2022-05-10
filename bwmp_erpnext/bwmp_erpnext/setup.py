@@ -225,7 +225,8 @@ def make_payment_order(source_name, target_doc=None):
 		"Payment Entry": {
 			"doctype": "Payment Order",
 			"validation": {
-				"docstatus": ["=", 1]
+				"docstatus": ["=", 1],
+				"name": ["not in", get_ordered_payment_entries()]
 			},
 			"field_no_map": [
 				'posting_date',

@@ -21,17 +21,10 @@ frappe.ui.form.on('Payment Order', {
 	},
 
 	get_ordered_payment_entries(frm) {
-		frappe.call({
-			method: 'bwmp_erpnext.bwmp_erpnext.setup.get_ordered_payment_entries',
-			callback: function(r) {
-				if (r.message) {
-					frm.events.custom_get_from_payment_entry(frm, r.message);
-				}
-			}
-		})
+		frm.events.custom_get_from_payment_entry(frm);
 	},
 
-	custom_get_from_payment_entry(frm, skip_payment_entries) {
+	custom_get_from_payment_entry(frm) {
 		erpnext.utils.map_current_doc({
 			method: "bwmp_erpnext.bwmp_erpnext.setup.make_payment_order",
 			source_doctype: "Payment Entry",
@@ -45,8 +38,7 @@ frappe.ui.form.on('Payment Order', {
 				docstatus: 1,
 				bank_account: frm.doc.company_bank_account,
 				paid_from: frm.doc.account,
-				utr_no: ["is", "not set"],
-				name: ["not in", skip_payment_entries]
+				utr_no: ["is", "not set"]
 			}
 		});
 	},

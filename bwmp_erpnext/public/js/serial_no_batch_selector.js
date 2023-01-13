@@ -1,3 +1,5 @@
+frappe.provide("erpnext");
+
 erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_dialog) {
 	let warehouse, receiving_stock, existing_stock;
 	if (frm.doc.is_return) {

@@ -45,6 +45,8 @@ erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_
 	});
 }
 
+
+frappe.provide("erpnext.stock");
 erpnext.stock.select_batch_and_serial_no = function(frm, item) {
 	let get_warehouse_type_and_name = (item) => {
 		let value = '';

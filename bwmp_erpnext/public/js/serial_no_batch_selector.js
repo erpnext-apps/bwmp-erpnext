@@ -45,7 +45,7 @@ erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_
 	});
 }
 
-erpnext.stock.select_batch_and_serial_no = (frm, item) => {
+erpnext.stock.select_batch_and_serial_no = function(frm, item) {
 	let get_warehouse_type_and_name = (item) => {
 		let value = '';
 		if(frm.fields_dict.from_warehouse.disp_status === "Write") {

@@ -76,8 +76,8 @@ erpnext.stock.select_batch_and_serial_no = function(frm, item) {
 	}, true);
 }
 
-erpnext.SerialNoBatchSelector = Class.extend({
-	init: function(opts, show_dialog) {
+erpnext.SerialNoBatchSelector = class SerialNoBatchSelector {
+	constructor(opts, show_dialog) {
 		$.extend(this, opts);
 		this.show_dialog = show_dialog;
 		// frm, item, warehouse_details, has_batch, oldest
@@ -657,7 +657,7 @@ erpnext.SerialNoBatchSelector = Class.extend({
 			}
 		];
 	}
-});
+};
 
 function get_pending_qty_fields(me) {
 	if (!check_can_calculate_pending_qty(me)) return [];

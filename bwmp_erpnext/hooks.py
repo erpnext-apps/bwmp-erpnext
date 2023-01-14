@@ -43,7 +43,8 @@ override_doctype_class = {
 # include js in doctype views
 doctype_js = {
     "Payment Order" : "bwmp_erpnext/setup.js",
-	"Stock Entry" : "bwmp_erpnext/stock_entry.js"
+	"Stock Entry" : "bwmp_erpnext/stock_entry.js",
+	"Delivery Note" : "bwmp_erpnext/delivery_note.js"
 }
 
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}

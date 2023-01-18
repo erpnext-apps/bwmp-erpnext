@@ -6,7 +6,7 @@ def execute():
 	df = dict(fieldname="document_naming_series", hidden=1,
 		label='Document Naming Series', fieldtype='Data')
 
-	for doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry"]:
+	for doctype in ["Sales Invoice", "Purchase Invoice", "Payment Entry", "Journal Entry", "Tax Withheld Vouchers"]:
 		frappe.reload_doc("accounts", "doctype", frappe.scrub(doctype))
 		create_custom_field(doctype, df)
 

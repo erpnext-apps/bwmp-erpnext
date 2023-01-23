@@ -66,7 +66,7 @@ def get_supplier_invoice_no(row, party_data):
 				bill_no = reference.bill_no
 				index += 1
 
-		if bill_no:
+		if bill_no and len(data) > index:
 			data[index] = bill_no
 
 	return data

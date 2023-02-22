@@ -165,7 +165,7 @@ frappe.ui.form.on('Payment Order', {
 						'in_list_view': 1,
 						'fieldtype': 'Data',
 						'columns': 1,
-						'read_only': 1
+						'read_only': 0
 					},
 					{
 						'label' : 'UTR Date',
@@ -173,7 +173,7 @@ frappe.ui.form.on('Payment Order', {
 						'in_list_view': 1,
 						'fieldtype': 'Date',
 						'columns': 1,
-						'read_only': 1
+						'read_only': 0
 					}
 				]
 			},

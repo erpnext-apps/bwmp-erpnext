@@ -27,11 +27,6 @@ app_include_js = "/assets/bwmp_erpnext/js/serial_no_batch_selector.js"
 # webform_include_js = {"doctype": "public/js/doctype.js"}
 # webform_include_css = {"doctype": "public/css/doctype.css"}
 
-fixtures = [
-	{
-		"dt": "Server Script"
-	}
-]
 
 override_doctype_class = {
 	"Document Naming Rule": "bwmp_erpnext.bwmp_erpnext.custom_document_naming_rule.CustomDocumentNamingRule"

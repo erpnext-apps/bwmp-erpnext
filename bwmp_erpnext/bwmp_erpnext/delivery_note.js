@@ -69,6 +69,7 @@ erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_
 		}
 	}
 
+
 	frappe.require("assets/bwmp_erpnext/js/serial_no_batch_selector.js", function() {
 		if (!frappe.flags.trigger_from_barcode_scanner) {
 			new erpnext.SerialNoBatchSelector({

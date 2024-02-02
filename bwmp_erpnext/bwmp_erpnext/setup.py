@@ -1,8 +1,10 @@
 import frappe, json
 from frappe import _
-from frappe.utils import format_date, today
+from collections import OrderedDict
+from frappe.utils import cint, flt, get_table_name, getdate, format_date, today
+from pypika import functions as fn
 from frappe.contacts.doctype.contact.contact import get_default_contact
-from erpnext.stock.report.batch_wise_balance_history.batch_wise_balance_history import execute
+from erpnext.stock.doctype.warehouse.warehouse import apply_warehouse_filter
 
 from frappe.utils.csvutils import (
 	build_csv_response,
@@ -175,7 +177,7 @@ def get_available_batches(item_code, warehouse, company):
 		"to_date": today()
 	})
 
-	columns, data = execute(filters)
+	data = execute(filters)
 
 	batch_wise_data = get_batch_details()
 	for row in data:
@@ -291,3 +293,100 @@ def update_naming_prefix(doc, method):
 		if doc.mode_of_payment == "NEFT":
 			doc.reference_no = doc.name
 			doc.reference_date = today()
+
+
+def execute(filters=None):
+	if not filters:
+		filters = {}
+
+	if filters.from_date > filters.to_date:
+		frappe.throw(_("From Date must be before To Date"))
+
+	float_precision = cint(frappe.db.get_default("float_precision")) or 3
+	iwb_map = get_item_warehouse_batch_map(filters, float_precision)
+
+	data = []
+	for key, details in iwb_map.items():
+		if flt(details.bal_qty, 3) <= 0:
+			continue
+
+		data.append(
+			[
+				details.item_code,
+				details.item_name,
+				details.description,
+				details.warehouse,
+				details.batch_no,
+				flt(details.bal_qty),
+				flt(details.bal_qty),
+				flt(details.bal_qty),
+				flt(details.bal_qty),
+				details.stock_uom,
+			]
+		)
+
+	return data
+
+def get_item_warehouse_batch_map(filters, float_precision):
+	sle = get_stock_ledger_entries(filters)
+	iwb_map = OrderedDict()
+
+	for d in sle:
+		key  = (d.item_code, d.warehouse, d.batch_no)
+		if key not in iwb_map:
+			iwb_map[key] = frappe._dict({
+				"bal_qty": 0,
+				"item_code": d.item_code,
+				"warehouse": d.warehouse,
+				"batch_no": d.batch_no,
+				"stock_uom": d.stock_uom,
+				"item_name": d.item_name,
+				"description": d.description,
+				"posting_date": d.posting_date,
+			})
+
+		iwb_map[key]["bal_qty"] += flt(d.actual_qty, float_precision)
+
+	return iwb_map
+
+
+def get_stock_ledger_entries(filters):
+	if not filters.get("from_date"):
+		frappe.throw(_("'From Date' is required"))
+	if not filters.get("to_date"):
+		frappe.throw(_("'To Date' is required"))
+
+	sle = frappe.qb.DocType("Stock Ledger Entry")
+	batch = frappe.qb.DocType("Batch")
+	query = (
+		frappe.qb.from_(sle)
+		.inner_join(batch)
+		.on(sle.batch_no == batch.name)
+		.select(
+			sle.item_code,
+			sle.warehouse,
+			sle.batch_no,
+			sle.posting_date,
+			batch.stock_uom,
+			batch.item_name,
+			batch.description,
+			fn.Sum(sle.actual_qty).as_("actual_qty"),
+		)
+		.where(
+			(sle.docstatus < 2)
+			& (sle.is_cancelled == 0)
+			& (fn.IfNull(sle.batch_no, "") != "")
+			& (sle.posting_date <= filters["to_date"])
+		)
+		.groupby(sle.voucher_no, sle.batch_no, sle.item_code, sle.warehouse)
+		.orderby(batch.creation)
+	)
+
+	if frappe.db.exists("Warehouse", filters.get("warehouse")):
+		query = apply_warehouse_filter(query, sle, filters)
+
+	for field in ["item_code", "batch_no", "company"]:
+		if filters.get(field):
+			query = query.where(sle[field] == filters.get(field))
+
+	return query.run(as_dict=True)

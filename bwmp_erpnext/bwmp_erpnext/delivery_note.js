@@ -70,16 +70,18 @@ erpnext.show_serial_batch_selector = function (frm, d, callback, on_close, show_
 	}
 
 	frappe.require("assets/bwmp_erpnext/js/serial_no_batch_selector.js", function() {
-		new erpnext.SerialNoBatchSelector({
-			frm: frm,
-			item: d,
-			warehouse_details: {
-				type: "Warehouse",
-				name: warehouse
-			},
-			callback: callback,
-			on_close: on_close
-		}, show_dialog);
+		if (!frappe.flags.trigger_from_barcode_scanner) {
+			new erpnext.SerialNoBatchSelector({
+				frm: frm,
+				item: d,
+				warehouse_details: {
+					type: "Warehouse",
+					name: warehouse
+				},
+				callback: callback,
+				on_close: on_close
+			}, show_dialog);
+		}
 	});
 }
 

@@ -126,7 +126,9 @@ erpnext.stock.custom_batch_selector = (frm, item) => {
 			frappe.model.set_value(item.doctype, item.name, {
 				's_warehouse': values.warehouse,
 				'qty': values.qty,
-				'batch_no': values.batch_no
+				'batch_no': values.batch_no,
+				'use_serial_batch_fields': 1,
+				'serial_and_batch_bundle': "",
 			});
 
 			refresh_field("items");

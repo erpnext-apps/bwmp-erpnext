@@ -10,7 +10,7 @@ from frappe.utils import (
 )
 
 @frappe.whitelist()
-def get_auto_data(**kwargs):
+def get_data(**kwargs):
 	data = get_auto_data(**kwargs)
 
 	for row in data:

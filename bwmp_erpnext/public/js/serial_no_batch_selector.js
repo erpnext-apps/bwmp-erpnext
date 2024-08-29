@@ -543,7 +543,7 @@ erpnext.SerialBatchPackageSelector = class SerialNoBatchBundleUpdate {
 
 		if (qty) {
 			frappe.call({
-				method: "bwmp_erpnext.custom_python.custom_serial_and_batch_bundle.get_auto_data",
+				method: "bwmp_erpnext.custom_python.custom_serial_and_batch_bundle.get_data",
 				args: {
 					item_code: this.item.item_code,
 					warehouse: this.item.warehouse || this.item.s_warehouse,

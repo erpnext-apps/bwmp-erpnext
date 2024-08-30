@@ -469,9 +469,19 @@ def on_submit(doc, method=None):
 	set_batch_details(doc)
 
 def set_batch_details(doc):
+	dimension_details = frappe._dict()
+
+	if ch_doctype := get_child_doctype(doc):
+		dimension_details = frappe.db.get_value(
+			ch_doctype, doc.voucher_detail_no, ["length", "width", "weight", "thickness", "custom_grade", "custom_tracking_no"], as_dict=1
+		)
+
 	for row in doc.entries:
 		if not row.batch_no:
 			continue
+
+		if not row.length and not row.width and not row.weight and not row.thickness and not row.custom_grade and not row.custom_tracking_no:
+			row.update(dimension_details)
 
 		if doc.type_of_transaction == "Inward" and row.qty > 0:
 			frappe.db.set_value("Batch", row.batch_no, {
@@ -483,3 +493,14 @@ def set_batch_details(doc):
 				"custom_tracking_no": row.custom_tracking_no,
 			})
 
+
+def get_child_doctype(doc):
+	if doc.type_of_transaction != "Inward":
+		return
+
+	if doc.voucher_type in ["Stock Entry", "Purchase Receipt", "Purchase Invoice"]:
+		return {
+			"Stock Entry": "Stock Entry Detail",
+			"Purchase Receipt": "Purchase Receipt Item",
+			"Purchase Invoice": "Purchase Invoice Item",
+		}.get(doc.voucher_type)

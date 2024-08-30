@@ -125,10 +125,6 @@ doc_events = {
 		"on_submit": "bwmp_erpnext.custom_python.custom_serial_and_batch_bundle.on_submit",
 	},
 
-	"Stock Entry": {
-		"on_submit": "bwmp_erpnext.custom_python.custom_stock_entry.on_submit_event",
-	},
-
 	"*": {
 		"validate": "bwmp_erpnext.bwmp_erpnext.setup.update_naming_prefix",
 	}

@@ -480,7 +480,9 @@ def set_batch_details(doc):
 		if not row.batch_no:
 			continue
 
-		row.update(dimension_details)
+		if not row.length and not row.width and not row.weight and not row.thickness and not row.custom_grade and not row.custom_tracking_no:
+			row.update(dimension_details)
+			row.db_update()
 
 		if doc.type_of_transaction == "Inward" and row.qty > 0:
 			frappe.db.set_value("Batch", row.batch_no, {

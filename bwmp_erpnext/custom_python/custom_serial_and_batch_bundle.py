@@ -1,4 +1,5 @@
 import frappe, csv
+from collections import defaultdict
 from frappe import _, _dict, bold
 from erpnext.stock.doctype.serial_and_batch_bundle.serial_and_batch_bundle import get_auto_data
 from frappe.utils import (

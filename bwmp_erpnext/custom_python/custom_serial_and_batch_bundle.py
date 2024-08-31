@@ -494,7 +494,12 @@ def set_batch_details(doc):
 				"custom_grade": row.custom_grade,
 				"custom_tracking_no": row.custom_tracking_no,
 			})
+		elif row.qty < 0:
+			batch_details = frappe.db.get_value("Batch", row.batch_no, ["length", "weight", "thickness", "width", "custom_grade", "custom_tracking_no"], as_dict=1)
 
+			if batch_details:
+				row.update(batch_details)
+				row.db_update()
 
 def get_child_doctype(doc):
 	if doc.type_of_transaction != "Inward":

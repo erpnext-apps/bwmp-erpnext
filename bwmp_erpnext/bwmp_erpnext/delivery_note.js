@@ -22,17 +22,3 @@ frappe.ui.form.on('Delivery Note', {
 		}
 	}
 })
-
-frappe.ui.form.on('Delivery Note Item', {
-	item_code(frm, cdt, cdn) {
-		let row = locals[cdt][cdn];
-		frappe.flags.hide_serial_batch_dialog = true;
-		frm.events.setup_batch_serial_no_selector(frm, row);
-	},
-
-	pick_batch_no(frm, cdt, cdn) {
-		let row = locals[cdt][cdn];
-		frappe.flags.hide_serial_batch_dialog = true;
-		frm.events.setup_batch_serial_no_selector(frm, row);
-	}
-})
